@@ -56,9 +56,11 @@ function registerServiceWorker() {
     if (waiting) waiting.postMessage({ type: 'SKIP_WAITING' });
   });
 
+  // Reload only when a new version replaces an old one, not when the first install takes control.
+  const hadController = !!navigator.serviceWorker.controller;
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading) return;
+    if (!hadController || reloading) return;
     reloading = true;
     location.reload();
   });
