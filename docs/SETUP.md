@@ -8,8 +8,8 @@ Step-by-step setup. Do the sections in order. Each build step adds its section h
 
 Needs Python (already installed on the maintenance PC).
 
-1. Open a terminal in `E:\Projects\NCM-Inspection\web`.
-2. Run: `python -m http.server 8080`
+1. In `web/config.js` set `MOCK: true` (**do not commit this change**; the published app uses `MOCK: false`).
+2. Open a terminal in `E:\Projects\NCM-Inspection\web` and run: `python -m http.server 8080`
 3. Open `http://localhost:8080` in Chrome or Edge.
 4. Sign in with **U001** (admin) or **U002** (technician), PIN **1234**.
    The first sign-in asks for a new PIN. In demo mode the new PIN is kept in this browser only.
@@ -21,7 +21,7 @@ To reset the demo: browser DevTools → Application → Storage → **Clear site
 | Setting | Meaning |
 |---|---|
 | `MOCK: true` | Demo data from `web/js/mock-data.js`. No Google needed. |
-| `MOCK: false` + `API_URL` | Real backend (Apps Script, Step 1). |
+| `MOCK: false` + `API_URL` | Real backend (Apps Script). This is what is published. |
 
 ---
 
@@ -51,58 +51,62 @@ account later (GitHub → Settings → Transfer), the address changes to that ac
 
 ---
 
-## C. Google (department account, database, photos)
+## C. Google account and database
 
-Done once, before Step 1.
+**Current setup (done 2026-10-15):** department account `mohameedharounn@gmail.com`. In its Drive: the Sheet
+`NCM_Inspection_DB` with the Apps Script project bound to it (same name). The Sheet was built automatically
+from `docs/NCM_Inspection_DB_Template.xlsx` by `setupProject`, timezone Cairo.
 
-1. Create a Google account for the maintenance department (not a personal account), e.g. `ncm.maintenance.eldabaa@gmail.com`.
-   Turn on 2-step verification and keep the recovery phone with the maintenance manager.
-2. In that account's Google Drive, create the folder `NCM Inspection`, and inside it `Photos`.
-3. Upload `docs/NCM_Inspection_DB_Template.xlsx` to `NCM Inspection` → open it → **File → Save as Google Sheets**.
-   Rename it `NCM_Inspection_DB`. Delete the uploaded .xlsx.
-4. **File → Settings → Time zone → (GMT+02:00) Cairo** → Save.
-5. Fill the admin tabs (`Assets`, `Users`, `Assignments`, `ChecklistTemplates`, `ChecklistItems`, `Settings`).
-   Asset codes exactly as in the NCM Master Asset Register. Leave `PINHash` / `PINSalt` empty — the setup script fills them.
-   In `Assignments`, dates as `2026-10-18` (or real date cells) and `DueWeekday` as `SAT` … `THU` for weekly templates.
+Filling the data (any time, directly in the Sheet):
+- Fill the admin tabs (`Assets`, `Users`, `Assignments`, `ChecklistTemplates`, `ChecklistItems`, `Settings`).
+  Asset codes exactly as in the NCM Master Asset Register.
+- New user: add a row in `Users` with `PINHash` / `PINSalt` empty and `Active = Y`, then run **createInitialPins** (D3).
+- `Assignments`: dates as `2026-10-18` (or real date cells) and `DueWeekday` `SAT` … `THU` for weekly templates.
+  A task shows on the phone only while today is between `StartDate` and `EndDate`.
 
 ---
 
-## D. The server (Apps Script) — Step 1
+## D. The server (Apps Script)
 
-Done once in the department Google account. Later steps only paste updated files and redeploy (end of this section).
+The code lives in `apps-script/` and is sent to Google with **clasp** (Google's command-line tool, installed
+on the maintenance PC, signed in as the department account). No copy and paste.
 
-### D1. Put the code in
-1. Open the `NCM_Inspection_DB` Sheet → **Extensions → Apps Script**. A new tab opens; rename the project (top left) to `NCM Inspection API`.
-2. The project has one file `Code.gs`. Replace its content with `apps-script/Code.gs` from the project folder.
-3. Click **+** next to *Files* → **Script** and create `Db`, `Auth`, `Bootstrap`, `Setup` (the editor adds `.gs`).
-   Paste into each the content of the file with the same name in `apps-script/`.
-4. **Project Settings** (gear icon) → tick **Show "appsscript.json" manifest file** → back to the editor →
-   open `appsscript.json` → replace its content with `apps-script/appsscript.json`.
-5. Press **Save** (disk icon).
+### D1. Send a code change to Google
+From the project folder:
+1. `clasp push --force` — uploads the `apps-script/` files.
+2. `clasp update-deployment AKfycbwYrS6w_vgal04fe4j1YBm9lwExJLF4OMAMiK-PP19l_8--OaZ3XYd0Ue12pUBk64Hi`
+   — publishes them on the same link, so the phones need nothing.
+3. Open the link in `web/config.js` (`API_URL`) in a browser: it must say *NCM Inspection API is running. Database: ready.*
 
-### D2. First run (creates the PINs)
-1. In the editor, choose the file `Setup.gs`, choose the function **setupProject** in the toolbar list, press **Run**.
-2. Google asks for permission: **Review permissions** → choose the department account →
-   *Google hasn't verified this app* → **Advanced** → **Go to NCM Inspection API (unsafe)** → **Allow**.
-   (It is "unverified" only because it is our own script, not a published app.)
-3. The **Execution log** at the bottom shows `Sheet OK` and one line per user: `U002  Name  →  PIN 123456`.
-   Give each person only their own PIN. They choose a new PIN at first sign-in.
-   If it shows an error such as `Defects: missing column(s) …`, fix the Sheet header and run again.
-4. Reset a PIN later: clear that user's `PINHash` cell in `Users`, select **createInitialPins**, press **Run**.
+`.clasp.json` (which script to push to) is kept only on this PC. If it is lost: `clasp clone <Script ID>`
+(Script ID: Apps Script editor → Project Settings), then move the files back into `apps-script/`.
 
-### D3. Publish the API
-1. **Deploy → New deployment** → gear icon → **Web app**.
-2. Description `v1` · Execute as **Me (department account)** · Who has access **Anyone** → **Deploy**.
-3. Copy the **Web app URL** (ends with `/exec`). Opening it in a browser shows *NCM Inspection API is running.*
-4. Put it in `web/config.js`: `API_URL: 'https://script.google.com/macros/s/…/exec'` and `MOCK: false`,
-   bump the version (section B, *Publishing a new version*) and push.
+### D2. If Google asks for permission again
+When new code needs a new Google permission (e.g. Drive for photos in Step 3), the web app stops with
+"Authorization needed" until the account owner approves once:
+open the `API_URL` link in Chrome while signed in as the department account → **Review permissions** → **Advanced** →
+**Go to … (unsafe)** → **Allow**. ("Unsafe" only means it is our own script, not a published app.)
 
-"Anyone" is needed because the phones call it without a Google login. Nobody can read data without a valid
-session token, and the Sheet itself stays private to the department account.
+### D3. Running a setup function by hand
+Apps Script editor (Chrome, department account; if several Google accounts are signed in, check the account
+picture top right) → file `Setup.gs` → choose the function next to **Run** → **Run**. Results in the **Execution log**.
+- **setupProject** — first-time setup: builds an empty Sheet from the template, checks every tab and column,
+  sets the Cairo timezone, creates PINs for users without one.
+- **createInitialPins** — new PIN for every user whose `PINHash` is empty. To reset someone's PIN: clear their
+  `PINHash` cell, then run this. The PINs appear only in the Execution log; give each person only their own.
 
-### D4. Updating the server after a code change
-Paste the changed `.gs` files, Save, then **Deploy → Manage deployments → pencil icon → Version: New version → Deploy**.
-The URL stays the same, so the phones need nothing.
+### D4. First-time setup on a new account (reference)
+1. Turn on **Google Apps Script API**: https://script.google.com/home/usersettings
+2. `npm install -g @google/clasp` then `clasp login` (approve in the browser).
+3. From the project folder: `clasp create-script --type sheets --title "NCM_Inspection_DB" --rootDir apps-script`
+   — then `git checkout -- apps-script/appsscript.json` (clasp overwrites it with a default one).
+4. `clasp push --force` and `clasp create-deployment --description "v1"` → note the deployment ID.
+5. Run **setupProject** (D3) and approve the permissions; then open the web app link once and approve (D2).
+6. Put `https://script.google.com/macros/s/<deployment ID>/exec` in `web/config.js` as `API_URL`, `MOCK: false`,
+   bump the version and push (section B).
+
+"Who has access: Anyone" (in `apps-script/appsscript.json`) is needed because the phones call the API without a
+Google login. Nobody can read data without a valid session token, and the Sheet stays private to the account.
 
 ---
 

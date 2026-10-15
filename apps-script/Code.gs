@@ -52,9 +52,19 @@ function doPost(e) {
   }
 }
 
-// Opening the /exec link in a browser shows this, which confirms the deployment works.
+// Opening the /exec link in a browser confirms the deployment works and shows whether the database is set up.
 function doGet() {
-  return ContentService.createTextOutput('NCM Inspection API is running.');
+  let status;
+  try {
+    const configured = !!PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+    const problems = checkSchema_();
+    if (!configured) status = 'Database: NOT SET UP — run setupProject in the Apps Script editor.';
+    else if (problems.length) status = 'Database: PROBLEM — ' + problems.join('; ');
+    else status = 'Database: ready.';
+  } catch (err) {
+    status = 'Database: ERROR — ' + String(err && err.message || err);
+  }
+  return ContentService.createTextOutput('NCM Inspection API is running.\n' + status);
 }
 
 function parseRequest_(e) {

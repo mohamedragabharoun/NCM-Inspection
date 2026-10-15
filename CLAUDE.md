@@ -17,6 +17,9 @@ Setup steps for Mohamed are in `docs/SETUP.md`; add to it at every build step.
 - Plain HTML/CSS/JavaScript ES modules. No framework, no bundler, no build step, no npm runtime dependencies.
 - Third-party libraries vendored into `/web/vendor/` with pinned versions. Nothing loaded from a CDN at runtime (the app must work offline).
 - Backend is Google Apps Script + Google Sheets + Google Drive. Sheet columns are always looked up by header name, never by position.
+- Backend changes go to Google with clasp (`clasp push --force`, then `clasp update-deployment <id>` on the existing deployment so the URL in `web/config.js` stays the same). See `docs/SETUP.md` part D. Run `node --test "tests/*.test.mjs"` first.
+- The published app runs with `MOCK: false`. For local UI work set `MOCK: true` but never commit it.
+- Every web change: bump `APP_VERSION` (config.js) and `VERSION` (sw.js) together, and list new files in `sw.js`.
 - POST requests to Apps Script without a custom Content-Type header (avoid CORS preflight).
 - No secrets or Sheet IDs in the frontend. They live in Apps Script Script Properties.
 - Asset codes come from the NCM Master Asset Register. Never invent or reformat them.

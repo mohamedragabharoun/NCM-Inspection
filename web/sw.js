@@ -2,7 +2,7 @@
 // IMPORTANT: when you change any web file, bump VERSION here (keep it equal to APP_VERSION in config.js)
 // so phones download the new files.
 
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
 const CACHE = `ncm-shell-${VERSION}`;
 
 const SHELL = [
