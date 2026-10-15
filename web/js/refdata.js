@@ -4,6 +4,7 @@
 import { call } from './api.js';
 import { kvGet, kvSet, kvDelete } from './db.js';
 import { dateIn } from './dates.js';
+import { backendId } from './session.js';
 
 const KEY = 'ref';
 const MAX_AGE_MS = 2 * 60 * 60 * 1000; // refresh at most every 2 hours (SPEC section 9)
@@ -11,7 +12,7 @@ const DEFAULT_TZ = 'Africa/Cairo';
 
 export async function getRef(userId) {
   const ref = await kvGet(KEY);
-  return ref && ref.user && ref.user.UserID === userId ? ref : null;
+  return ref && ref.user && ref.user.UserID === userId && ref.backend === backendId() ? ref : null;
 }
 
 export function isStale(ref) {
@@ -23,6 +24,7 @@ export async function refreshRef() {
   const ref = {
     ...data,
     fetchedAt: Date.now(),
+    backend: backendId(),
     // Phone clock vs server clock, so "today" is right even if the phone clock is wrong.
     clockOffsetMs: data.serverTime ? Date.parse(data.serverTime) - Date.now() : 0,
   };
