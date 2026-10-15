@@ -60,7 +60,58 @@ Done once, before Step 1.
 2. In that account's Google Drive, create the folder `NCM Inspection`, and inside it `Photos`.
 3. Upload `docs/NCM_Inspection_DB_Template.xlsx` to `NCM Inspection` → open it → **File → Save as Google Sheets**.
    Rename it `NCM_Inspection_DB`. Delete the uploaded .xlsx.
-4. Fill the admin tabs (`Assets`, `Users`, `Assignments`, `ChecklistTemplates`, `ChecklistItems`, `Settings`).
+4. **File → Settings → Time zone → (GMT+02:00) Cairo** → Save.
+5. Fill the admin tabs (`Assets`, `Users`, `Assignments`, `ChecklistTemplates`, `ChecklistItems`, `Settings`).
    Asset codes exactly as in the NCM Master Asset Register. Leave `PINHash` / `PINSalt` empty — the setup script fills them.
+   In `Assignments`, dates as `2026-10-18` (or real date cells) and `DueWeekday` as `SAT` … `THU` for weekly templates.
 
-The Apps Script part (deploying the API and connecting `API_URL`) is added to this guide in **Step 1**.
+---
+
+## D. The server (Apps Script) — Step 1
+
+Done once in the department Google account. Later steps only paste updated files and redeploy (end of this section).
+
+### D1. Put the code in
+1. Open the `NCM_Inspection_DB` Sheet → **Extensions → Apps Script**. A new tab opens; rename the project (top left) to `NCM Inspection API`.
+2. The project has one file `Code.gs`. Replace its content with `apps-script/Code.gs` from the project folder.
+3. Click **+** next to *Files* → **Script** and create `Db`, `Auth`, `Bootstrap`, `Setup` (the editor adds `.gs`).
+   Paste into each the content of the file with the same name in `apps-script/`.
+4. **Project Settings** (gear icon) → tick **Show "appsscript.json" manifest file** → back to the editor →
+   open `appsscript.json` → replace its content with `apps-script/appsscript.json`.
+5. Press **Save** (disk icon).
+
+### D2. First run (creates the PINs)
+1. In the editor, choose the file `Setup.gs`, choose the function **setupProject** in the toolbar list, press **Run**.
+2. Google asks for permission: **Review permissions** → choose the department account →
+   *Google hasn't verified this app* → **Advanced** → **Go to NCM Inspection API (unsafe)** → **Allow**.
+   (It is "unverified" only because it is our own script, not a published app.)
+3. The **Execution log** at the bottom shows `Sheet OK` and one line per user: `U002  Name  →  PIN 123456`.
+   Give each person only their own PIN. They choose a new PIN at first sign-in.
+   If it shows an error such as `Defects: missing column(s) …`, fix the Sheet header and run again.
+4. Reset a PIN later: clear that user's `PINHash` cell in `Users`, select **createInitialPins**, press **Run**.
+
+### D3. Publish the API
+1. **Deploy → New deployment** → gear icon → **Web app**.
+2. Description `v1` · Execute as **Me (department account)** · Who has access **Anyone** → **Deploy**.
+3. Copy the **Web app URL** (ends with `/exec`). Opening it in a browser shows *NCM Inspection API is running.*
+4. Put it in `web/config.js`: `API_URL: 'https://script.google.com/macros/s/…/exec'` and `MOCK: false`,
+   bump the version (section B, *Publishing a new version*) and push.
+
+"Anyone" is needed because the phones call it without a Google login. Nobody can read data without a valid
+session token, and the Sheet itself stays private to the department account.
+
+### D4. Updating the server after a code change
+Paste the changed `.gs` files, Save, then **Deploy → Manage deployments → pencil icon → Version: New version → Deploy**.
+The URL stays the same, so the phones need nothing.
+
+---
+
+## E. Checks on the computer (for development)
+
+From the project folder (needs Node.js, already installed):
+
+| Command | What it checks |
+|---|---|
+| `node --test "tests/*.test.mjs"` | due-date logic, the Apps Script code (with fake Google services), app files and translations |
+| `node tests/gas-server.mjs` | runs the Apps Script code locally on `http://localhost:8090/exec` for end-to-end tests |
+| `python -I tests/make_fixture.py` | refreshes the test data after the Sheet template changes |

@@ -9,17 +9,19 @@ import { showHome } from './home.js';
 
 let currentScreen = null;
 
-async function route() {
+// messageKey: optional i18n key shown on the login screen (e.g. why the user was signed out).
+async function route(messageKey) {
   const session = await getSession();
+  const next = () => route();
   if (!session) {
-    currentScreen = () => showLogin({ onDone: route });
+    currentScreen = () => showLogin({ onDone: next, message: messageKey && t(messageKey) });
   } else if (session.mustChangePin) {
     if (!hasLoginPin()) {
       // App was reloaded during the forced PIN change: sign in again to restart it.
       await clearSession();
-      currentScreen = () => showLogin({ onDone: route, message: t('errors.MUST_CHANGE_PIN') });
+      currentScreen = () => showLogin({ onDone: next, message: t('errors.MUST_CHANGE_PIN') });
     } else {
-      currentScreen = () => showChangePin({ onDone: route });
+      currentScreen = () => showChangePin({ onDone: next });
     }
   } else {
     currentScreen = () => showHome({ session, onLogout: route });

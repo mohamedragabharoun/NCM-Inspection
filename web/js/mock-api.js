@@ -2,6 +2,7 @@
 // so screens can be built and tested without Google. State lives in this browser only.
 
 import DATA from './mock-data.js';
+import { addDays, dateIn, weekdayCode } from './dates.js';
 import { isPinFormat, isWeakPin } from './pin.js';
 
 const STATE_KEY = 'ncm.mockState';
@@ -33,6 +34,41 @@ function sessionUser(state, token) {
   const s = token && state.sessions[token];
   if (!s || Date.parse(s.expiresAt) <= Date.now()) return null;
   return DATA.users.find((u) => u.UserID === s.userId) || null;
+}
+
+// Demo assignments and history built around today's date, so every task group has something in it.
+function demoData(today) {
+  const span = { StartDate: addDays(today, -30), EndDate: addDays(today, 60) };
+  const a = (id, userId, assetId, templateId, dueOffset = null) => ({
+    AssignmentID: id, UserID: userId, AssetID: assetId, TemplateID: templateId, ...span,
+    DueWeekday: dueOffset === null ? '' : weekdayCode(addDays(today, dueOffset)), Notes: 'Demo',
+  });
+  const done = (assetId, templateId, offset, userId = 'U002', role = 'Technician') =>
+    ({ AssetID: assetId, TemplateID: templateId, UserID: userId, Role: role, Date: addDays(today, offset) });
+
+  return {
+    assignments: [
+      ...DATA.assignments,
+      a('DEMO01', 'U002', 'CP07', 'CP-D'),
+      a('DEMO02', 'U002', 'CP08', 'CP-W', 0),
+      a('DEMO03', 'U002', 'CP09', 'CP-W', -3),
+      a('DEMO04', 'U002', 'CP10', 'CP-W', 2),
+      a('DEMO05', 'U002', 'CP11', 'CP-W', -1),
+      a('DEMO06', 'U002', 'CP12', 'CP-250'),
+      a('DEMO07', 'U002', 'CP07', 'CP-250'),
+      a('DEMO08', 'U001', 'CP08', 'CP-D'),
+      a('DEMO09', 'U001', 'CP09', 'CP-250'),
+    ],
+    history: [
+      done('CP08', 'CP-W', -7),
+      done('CP09', 'CP-W', -10),
+      done('CP10', 'CP-W', -5),
+      done('CP11', 'CP-W', -8),
+      done('CP11', 'CP-W', 0),
+    ],
+    meters: { CP07: { hours: 860 }, CP09: { hours: 1500 }, CP12: { hours: 1240 } },
+    last250: { 'CP12|CP-250': { hours: 1000 }, 'CP09|CP-250': { hours: 1240 } },
+  };
 }
 
 const actions = {
@@ -79,6 +115,32 @@ const actions = {
   logout(state, { token }) {
     delete state.sessions[token];
     return ok({});
+  },
+
+  bootstrap(state, { token }) {
+    const user = sessionUser(state, token);
+    if (!user) return fail('NO_SESSION');
+    if (user.MustChangePIN === 'Y' && !state.changed[user.UserID]) return fail('MUST_CHANGE_PIN');
+    const today = dateIn(DATA.settings.Timezone);
+    const demo = demoData(today);
+    const templateIds = new Set(DATA.templates.filter((tpl) => tpl.Active === 'Y').map((tpl) => tpl.TemplateID));
+    const assets = DATA.assets.filter((x) => x.Status === 'Active'
+      && (user.Role !== 'Technician' || x.Responsibility !== 'TITAN-2'));
+    const assignments = demo.assignments.filter((x) => x.UserID === user.UserID && x.StartDate <= today && today <= x.EndDate);
+    const keys = new Set(assignments.map((x) => `${x.AssetID}|${x.TemplateID}`));
+    return ok({
+      serverTime: new Date().toISOString(),
+      user: publicUser(user),
+      settings: DATA.settings,
+      assets,
+      templates: DATA.templates.filter((tpl) => templateIds.has(tpl.TemplateID)),
+      items: DATA.items.filter((it) => it.Active === 'Y' && templateIds.has(it.TemplateID)),
+      assignments,
+      history: demo.history.filter((x) => keys.has(`${x.AssetID}|${x.TemplateID}`)),
+      meters: demo.meters,
+      last250: demo.last250,
+      openDefects: [],
+    });
   },
 };
 

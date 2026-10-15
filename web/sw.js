@@ -2,7 +2,7 @@
 // IMPORTANT: when you change any web file, bump VERSION here (keep it equal to APP_VERSION in config.js)
 // so phones download the new files.
 
-const VERSION = '0.1.1';
+const VERSION = '0.2.0';
 const CACHE = `ncm-shell-${VERSION}`;
 
 const SHELL = [
@@ -15,6 +15,7 @@ const SHELL = [
   './i18n/en.json',
   './js/app.js',
   './js/api.js',
+  './js/dates.js',
   './js/db.js',
   './js/home.js',
   './js/i18n.js',
@@ -22,7 +23,9 @@ const SHELL = [
   './js/mock-api.js',
   './js/mock-data.js',
   './js/pin.js',
+  './js/refdata.js',
   './js/session.js',
+  './js/tasks.js',
   './js/ui.js',
   './icons/icon-192.png',
   './icons/icon-512.png',

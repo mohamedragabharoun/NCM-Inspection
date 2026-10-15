@@ -33,7 +33,35 @@
     "role": "Role: {role}",
     "scan": "Scan QR",
     "report": "Report a problem",
-    "comingSoon": "Your task list arrives in the next build step."
+    "soon": "Coming in a later build step."
+  },
+  "tasks": {
+    "OVERDUE": "Overdue",
+    "DUE": "Due now",
+    "COMING": "Coming up",
+    "DONE": "Done this week",
+    "overdueSince": "Was due {date}",
+    "dueToday": "Due today",
+    "dueBy": "Due by {date}",
+    "dueOn": "Due {date}",
+    "doneOn": "Done {date}",
+    "hours": "{since} / {interval} h since last 250h",
+    "baseline": "First 250h inspection needed (baseline)",
+    "updatedAt": "Updated {time}",
+    "neverUpdated": "Not downloaded yet",
+    "refresh": "Refresh",
+    "refreshing": "Updating…",
+    "loadingFirst": "Downloading your tasks…",
+    "needInternet": "Connect to the internet once to download your tasks.",
+    "empty": "No tasks are assigned to you right now.",
+    "allClear": "Nothing due. Good work."
+  },
+  "levels": {
+    "Daily": "Daily",
+    "Weekly": "Weekly",
+    "Monthly": "Monthly",
+    "Quarterly": "Quarterly",
+    "250h": "250 h"
   },
   "roles": {
     "Technician": "Technician",
@@ -54,6 +82,9 @@
     "OFFLINE": "No connection. Signing in needs internet the first time.",
     "NETWORK": "Could not reach the server. Try again.",
     "SERVER": "Server error. Try again later.",
-    "NOT_CONFIGURED": "The app is not connected to the server yet (API_URL is empty)."
+    "NOT_CONFIGURED": "The app is not connected to the server yet (API_URL is empty).",
+    "FORBIDDEN": "You do not have permission for this.",
+    "BAD_REQUEST": "The request was not valid.",
+    "UNKNOWN_ACTION": "This app version does not match the server. Update the app."
   }
 }
