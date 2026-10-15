@@ -42,6 +42,20 @@ test('setupProject stores the Sheet ID, formats hash columns as text and creates
   assert.match(be.logs.join('\n'), /already has a PIN/);
 });
 
+test('setupProject on a new empty Sheet builds the tabs from the template', () => {
+  const be = createBackend({ empty: true });
+  be.run('setupProject');
+  const tabs = be.spreadsheet.getSheets().map((s) => s.getName());
+  assert.equal(tabs[0], 'README');
+  assert.ok(!tabs.includes('Sheet1'));
+  assert.ok(tabs.includes('Defects') && tabs.includes('ChecklistItems'));
+  assert.ok(!tabs.some((n) => n.startsWith('Copy of')));
+  assert.equal(be.spreadsheet.getName(), 'NCM_Inspection_DB');
+  assert.equal(be.spreadsheet.getSpreadsheetTimeZone(), 'Africa/Cairo');
+  assert.deepEqual(be.trashed, ['TEMP']);
+  assert.match(be.logs.join('\n'), /U002 .*PIN \d{6}/);
+});
+
 test('setupProject refuses a Sheet with a missing column', () => {
   const be = createBackend();
   be.sheets.Defects.values[0] = be.sheets.Defects.values[0].filter((h) => h !== 'ReviewBy');

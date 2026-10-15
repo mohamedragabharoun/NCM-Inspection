@@ -1,7 +1,8 @@
 /**
  * One-time setup and maintenance. Run these from the Apps Script editor (select the function, press Run).
  *
- * setupProject()       — first time: checks the tabs, remembers the Sheet, creates first PINs.
+ * setupProject()       — first time: builds the tabs from the template if the Sheet is empty,
+ *                        checks the tabs, remembers the Sheet, creates first PINs.
  * createInitialPins()  — gives a new PIN to every user whose PINHash is empty.
  *                        To reset someone's PIN: clear their PINHash cell in Users, then run this.
  * The new PINs appear in the Execution log at the bottom of the editor. Give each person
@@ -27,10 +28,22 @@ const SCHEMA = {
 // Columns holding hex codes: forced to plain text so the Sheet never turns them into numbers.
 const TEXT_COLUMNS = { Users: ['UserID', 'PINHash', 'PINSalt'], Sessions: ['TokenHash', 'UserID'] };
 
+// The database template in the project repository (docs/NCM_Inspection_DB_Template.xlsx).
+const TEMPLATE_URL = 'https://raw.githubusercontent.com/mohamedragabharoun/NCM-Inspection/main/docs/NCM_Inspection_DB_Template.xlsx';
+const DB_NAME = 'NCM_Inspection_DB';
+const SITE_TIMEZONE = 'Africa/Cairo';
+
 function setupProject() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss) throw new Error('Open this script from the Sheet (Extensions → Apps Script), then run again.');
   PropertiesService.getScriptProperties().setProperty('SHEET_ID', ss.getId());
+
+  if (!ss.getSheetByName('Settings')) {
+    Logger.log('Empty Sheet: building the tabs from the template…');
+    importTemplate_(ss);
+  }
+  if (/^Untitled/i.test(ss.getName())) ss.rename(DB_NAME);
+  if (ss.getSpreadsheetTimeZone() !== SITE_TIMEZONE) ss.setSpreadsheetTimeZone(SITE_TIMEZONE);
 
   const problems = checkSchema_();
   if (problems.length) throw new Error('Fix the Sheet first:\n' + problems.join('\n'));
@@ -44,10 +57,28 @@ function setupProject() {
   });
 
   Logger.log('Sheet OK: ' + ss.getName() + ' (timezone ' + ss.getSpreadsheetTimeZone() + ')');
-  if (ss.getSpreadsheetTimeZone() !== 'Africa/Cairo') {
-    Logger.log('WARNING: set the Sheet timezone to Cairo: File → Settings → Time zone → (GMT+02:00) Cairo.');
-  }
   createInitialPins();
+}
+
+/**
+ * Copies every tab of the template (values, colours, widths) into this Sheet.
+ * The .xlsx is converted through a temporary Google Sheet, which is moved to the bin afterwards.
+ */
+function importTemplate_(ss) {
+  const blob = UrlFetchApp.fetch(TEMPLATE_URL).getBlob().setName('NCM template.xlsx');
+  const temp = Drive.Files.create({ name: 'NCM template (temporary)', mimeType: MimeType.GOOGLE_SHEETS }, blob);
+  try {
+    const src = SpreadsheetApp.openById(temp.id);
+    const leftovers = ss.getSheets();
+    src.getSheets().forEach((sh) => {
+      sh.copyTo(ss).setName(sh.getName());
+    });
+    leftovers.forEach((sh) => ss.deleteSheet(sh)); // the empty "Sheet1"
+    ss.setActiveSheet(ss.getSheetByName('README') || ss.getSheets()[0]);
+    ss.moveActiveSheet(1);
+  } finally {
+    Drive.Files.update({ trashed: true }, temp.id);
+  }
 }
 
 function checkSchema_() {

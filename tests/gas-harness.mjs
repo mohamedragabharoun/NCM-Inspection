@@ -47,6 +47,8 @@ class FakeRange {
 class FakeSheet {
   constructor(name, values) { this.name = name; this.values = values; this.formats = []; }
   getName() { return this.name; }
+  setName(name) { this.name = name; return this; }
+  copyTo(ss) { return ss.insertCopy(this); }
   getLastRow() { return this.values.length; }
   getLastColumn() { return Math.max(0, ...this.values.map((r) => r.length)); }
   getMaxRows() { return 1000; }
@@ -61,24 +63,71 @@ function formatDate(date, timeZone, pattern) {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
-/** Creates a fresh backend with its own copy of the fixture tables. */
-export function createBackend({ tables } = {}) {
-  const data = tables || JSON.parse(readFileSync(`${root}tests/fixtures/db.json`, 'utf8'));
-  const sheets = Object.fromEntries(Object.entries(data).map(([name, values]) => [name, new FakeSheet(name, values)]));
+const loadFixture = () => JSON.parse(readFileSync(`${root}tests/fixtures/db.json`, 'utf8'));
+
+// A spreadsheet whose tabs live in `sheets` (name → FakeSheet), kept in tab order.
+function makeSpreadsheet(id, name, sheets, timeZone = 'Africa/Cairo') {
+  const ss = {
+    id, name, timeZone, active: null,
+    getId: () => id,
+    getName: () => ss.name,
+    rename: (n) => { ss.name = n; },
+    getSpreadsheetTimeZone: () => ss.timeZone,
+    setSpreadsheetTimeZone: (tz) => { ss.timeZone = tz; },
+    getSheetByName: (n) => sheets[n] || null,
+    getSheets: () => Object.values(sheets),
+    insertCopy(sheet) {
+      const copy = new FakeSheet(`Copy of ${sheet.name}`, structuredClone(sheet.values));
+      const original = copy.setName.bind(copy);
+      copy.setName = (n) => { delete sheets[copy.name]; sheets[n] = copy; return original(n); };
+      sheets[copy.name] = copy;
+      return copy;
+    },
+    deleteSheet: (sheet) => { delete sheets[sheet.name]; },
+    setActiveSheet: (sheet) => { ss.active = sheet; return sheet; },
+    moveActiveSheet: (pos) => {
+      const rest = Object.entries(sheets).filter(([, s]) => s !== ss.active);
+      const ordered = [...rest.slice(0, pos - 1), [ss.active.name, ss.active], ...rest.slice(pos - 1)];
+      Object.keys(sheets).forEach((k) => delete sheets[k]);
+      ordered.forEach(([k, s]) => { sheets[k] = s; });
+    },
+  };
+  return ss;
+}
+
+/**
+ * Creates a fresh backend with its own copy of the fixture tables.
+ * empty: true starts from a blank spreadsheet (only "Sheet1"), like a new Google Sheet.
+ */
+export function createBackend({ tables, empty = false } = {}) {
+  const data = tables || loadFixture();
+  const sheets = empty
+    ? { Sheet1: new FakeSheet('Sheet1', []) }
+    : Object.fromEntries(Object.entries(data).map(([name, values]) => [name, new FakeSheet(name, values)]));
   const props = {};
   const cache = new Map();
   const logs = [];
-
-  const spreadsheet = {
-    getId: () => 'FAKE_SHEET_ID',
-    getName: () => 'NCM_Inspection_DB',
-    getSpreadsheetTimeZone: () => 'Africa/Cairo',
-    getSheetByName: (name) => sheets[name] || null,
-  };
+  const trashed = [];
+  const spreadsheet = makeSpreadsheet('FAKE_SHEET_ID', empty ? 'Untitled spreadsheet' : 'NCM_Inspection_DB', sheets, empty ? 'Etc/GMT' : 'Africa/Cairo');
+  const others = {};
 
   const context = {
     console,
-    SpreadsheetApp: { getActiveSpreadsheet: () => spreadsheet, openById: () => spreadsheet },
+    SpreadsheetApp: { getActiveSpreadsheet: () => spreadsheet, openById: (id) => (id === spreadsheet.id ? spreadsheet : others[id]) },
+    // The template download + conversion: becomes a spreadsheet with the fixture tables (incl. README).
+    UrlFetchApp: { fetch: () => ({ getBlob: () => ({ setName() { return this; } }) }) },
+    MimeType: { GOOGLE_SHEETS: 'application/vnd.google-apps.spreadsheet' },
+    Drive: {
+      Files: {
+        create: (meta) => {
+          const tabs = { README: new FakeSheet('README', [['NCM Inspection App — Database Template v1.0']]) };
+          Object.entries(loadFixture()).forEach(([n, v]) => { tabs[n] = new FakeSheet(n, v); });
+          others.TEMP = makeSpreadsheet('TEMP', meta.name, tabs);
+          return { id: 'TEMP' };
+        },
+        update: (meta, id) => { if (meta.trashed) trashed.push(id); },
+      },
+    },
     PropertiesService: {
       getScriptProperties: () => ({ getProperty: (k) => (k in props ? props[k] : null), setProperty: (k, v) => { props[k] = String(v); } }),
     },
@@ -111,6 +160,8 @@ export function createBackend({ tables } = {}) {
 
   return {
     sheets,
+    spreadsheet,
+    trashed,
     props,
     logs,
     /** Calls doPost like the phone does and returns the parsed JSON answer. */
