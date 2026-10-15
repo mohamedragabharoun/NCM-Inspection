@@ -1,0 +1,136 @@
+/* NCM Inspection — high-contrast, large-target field theme.
+   Use logical properties (inline-start/end) so RTL and LTR both work. */
+
+:root {
+  --bg: #F4F6F8;
+  --surface: #FFFFFF;
+  --text: #0E1621;
+  --muted: #4A5868;
+  --line: #C9D2DC;
+  --brand: #12263A;
+  --accent: #F2A900;
+  --primary: #0B5CAD;
+  --primary-text: #FFFFFF;
+  --ok: #1B7F3B;
+  --warn: #B45F00;
+  --danger: #C62828;
+  --radius: 12px;
+  --tap: 56px;
+  font-size: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, "Segoe UI", Roboto, "Noto Sans Arabic", "Noto Sans", Tahoma, sans-serif;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- Top bar ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: var(--brand); color: #fff;
+}
+.brand { font-weight: 800; font-size: 1.15rem; letter-spacing: .5px; color: var(--accent); margin-inline-end: auto; }
+
+.net { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; font-weight: 600; }
+.net::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--ok); }
+.net.offline::before { background: var(--danger); }
+
+.badge {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.15); font-size: .85rem; font-weight: 700;
+}
+.badge:empty { display: none; }
+.badge-mock { background: var(--accent); color: var(--brand); }
+
+.btn-lang {
+  min-width: var(--tap); min-height: 44px; padding: 0 12px;
+  border: 2px solid #fff; border-radius: 10px; background: transparent; color: #fff;
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+
+.update-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; background: var(--accent); color: var(--brand); font-weight: 700;
+}
+.update-bar[hidden] { display: none; }
+
+/* ---- Main ---- */
+main { flex: 1; width: 100%; max-width: 560px; margin: 0 auto; padding: 16px; outline: none; }
+
+h1 { font-size: 1.5rem; margin: 8px 0 4px; }
+h2 { font-size: 1.2rem; margin: 16px 0 8px; }
+p { margin: 0 0 12px; }
+.muted { color: var(--muted); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 16px;
+}
+
+/* ---- Forms ---- */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-weight: 700; margin-bottom: 6px; }
+.field .hint { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+
+input[type="text"], input[type="password"], input[type="tel"], input[type="number"], select, textarea {
+  width: 100%; min-height: var(--tap); padding: 10px 14px;
+  border: 2px solid var(--line); border-radius: 10px; background: #fff; color: var(--text);
+  font: inherit; font-size: 1.15rem;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px; border-color: var(--primary);
+}
+/* IDs and PINs are always left-to-right, even in Arabic. */
+.ltr-input { direction: ltr; text-align: start; letter-spacing: 2px; }
+[dir="rtl"] .ltr-input { text-align: right; }
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: var(--tap); padding: 0 20px; border: 0; border-radius: 10px;
+  background: var(--primary); color: var(--primary-text);
+  font: inherit; font-weight: 700; font-size: 1.1rem; cursor: pointer;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-block { display: flex; width: 100%; }
+.btn-big { min-height: 72px; font-size: 1.3rem; }
+.btn-danger { background: var(--danger); }
+.btn-accent { background: var(--accent); color: var(--brand); }
+.btn-ghost { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+.btn-small { min-height: 44px; padding: 0 14px; font-size: 1rem; }
+.stack > * + * { margin-top: 12px; }
+
+/* ---- Messages ---- */
+.msg { padding: 12px 14px; border-radius: 10px; font-weight: 600; margin-bottom: 16px; }
+.msg-error { background: #FDECEA; color: var(--danger); border: 2px solid var(--danger); }
+.msg-info { background: #E8F1FB; color: var(--primary); border: 2px solid var(--primary); }
+
+.toast {
+  position: fixed; inset-inline: 16px; bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 20; max-width: 528px; margin: 0 auto;
+  padding: 14px 16px; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 600;
+}
+.toast[hidden] { display: none; }
+
+.footer { text-align: center; font-size: .8rem; color: var(--muted); padding: 12px 0 max(12px, env(safe-area-inset-bottom)); }
+
+.spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.4); border-top-color: #fff;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

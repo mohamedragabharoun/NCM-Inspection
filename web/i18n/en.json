@@ -1,0 +1,59 @@
+{
+  "common": {
+    "appName": "NCM Inspection",
+    "langToggle": "عربي",
+    "online": "Online",
+    "offline": "Offline",
+    "pending": "Pending {n}",
+    "mock": "DEMO",
+    "version": "Version",
+    "updateAvailable": "A new version is ready.",
+    "updateNow": "Update",
+    "loading": "Please wait…",
+    "logout": "Log out"
+  },
+  "login": {
+    "title": "Sign in",
+    "userId": "User ID",
+    "userIdHint": "Example: U002",
+    "pin": "PIN",
+    "submit": "Sign in",
+    "mockHint": "Demo mode: users U001 (admin) and U002 (technician), PIN 1234."
+  },
+  "changePin": {
+    "title": "Choose a new PIN",
+    "intro": "This is your first sign-in. Choose your own PIN (4 to 6 digits) and do not share it.",
+    "newPin": "New PIN",
+    "confirmPin": "Repeat new PIN",
+    "submit": "Save PIN",
+    "done": "PIN saved."
+  },
+  "home": {
+    "hello": "Hello, {name}",
+    "role": "Role: {role}",
+    "scan": "Scan QR",
+    "report": "Report a problem",
+    "comingSoon": "Your task list arrives in the next build step."
+  },
+  "roles": {
+    "Technician": "Technician",
+    "Engineer": "Engineer",
+    "Admin": "Admin"
+  },
+  "errors": {
+    "REQUIRED": "Please fill in all fields.",
+    "PIN_FORMAT": "PIN must be 4 to 6 digits.",
+    "PIN_MISMATCH": "The two PINs are not the same.",
+    "PIN_SAME": "The new PIN must be different from the old one.",
+    "PIN_WEAK": "This PIN is too easy to guess. Choose another one.",
+    "BAD_LOGIN": "Wrong user ID or PIN.",
+    "LOCKED": "Too many wrong attempts. Try again in {minutes} minutes.",
+    "INACTIVE": "This user is not active. Contact the maintenance manager.",
+    "NO_SESSION": "Your session has ended. Please sign in again.",
+    "MUST_CHANGE_PIN": "You must choose a new PIN first.",
+    "OFFLINE": "No connection. Signing in needs internet the first time.",
+    "NETWORK": "Could not reach the server. Try again.",
+    "SERVER": "Server error. Try again later.",
+    "NOT_CONFIGURED": "The app is not connected to the server yet (API_URL is empty)."
+  }
+}
