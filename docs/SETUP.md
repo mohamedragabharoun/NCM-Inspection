@@ -30,6 +30,11 @@ To reset the demo: browser DevTools → Application → Storage → **Clear site
 A service worker (offline mode, install to home screen) only works on **https** or on `localhost`,
 so phones need the GitHub Pages copy.
 
+**Current setup (done 2026-10-15):** repository `github.com/mohamedragabharoun/NCM-Inspection` (public),
+Pages source = GitHub Actions. Live app: **https://mohamedragabharoun.github.io/NCM-Inspection/**
+Only steps 6 and "Publishing a new version" are needed from now on. If the repository moves to a department
+account later (GitHub → Settings → Transfer), the address changes to that account's name.
+
 1. Create a free GitHub account for the department (e.g. `ncm-maintenance`) with the department email.
 2. Create a **public** repository named `NCM-Inspection` (public is required for free Pages; the frontend has no data and no secrets).
 3. Upload the project to it (GitHub Desktop is the easiest: *File → Add local repository → `E:\Projects\NCM-Inspection` → Publish*).
